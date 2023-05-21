@@ -8,7 +8,7 @@ This project utilizes the principle of crawling to search and match websites wit
 The principle is to find all the links on the given page, visit them, match whether they match the keywords, and record them. Then, repeat the above process to obtain the links from the accessed content, and perform a search.   
    
 ## Usage
-1. SearSpy.py
+1. SearSpy.py   
 Type this command to make sure that you have already installed the needed library. If not, it would install them automaticly.   
 ```shell
 pip install -r requirements.txt
@@ -20,3 +20,10 @@ Type your keyword (a word or a phrase is suggested)
 Type the Recursion Depth (author suggested to fill the number between 10 and 20, larger number is okey but useless)   
 Type `y` or `Y` if you want to save all crawled links   
 Type `y` or `Y` to enable URL deduplication mode (TIP: It's faster, but it needs larger RAM)   
+   
+2. /tools/csv2json.py   
+Drag your csv file on its icon and release, or use `python3 cv2json.py <path>`, or run it and input the file path.   
+   
+## To Do
+1. csvTool to enrich the crawled data
+2. make it faster (multi-thread)
