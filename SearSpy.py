@@ -1,4 +1,8 @@
-VERSION = "v1.6"
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+#global VERSION,SaveAll_Flag,UrlDeDuplication,IfShowAll_Flag,ColorOutput,LoadedUrl,RequestTimeout,RequestHeaders, FileOutputDir
+VERSION = "v1.7"
 
 SaveAll_Flag = False        #全部保存爬虫记录
 UrlDeDuplication = True     #URL去重
@@ -16,10 +20,13 @@ RequestHeaders = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
 }                           #请求头
 
+FileOutputDir = "./"
+
 
 import requests
 import csv
 import re
+import sys
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
@@ -39,13 +46,13 @@ else:
 
 def SaveCSV(url, current_url):
     #保存在CSV中
-    with open('results_only.csv', 'a', newline='') as f:
+    with open(FileOutputDir + '/results_only.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([url, current_url])
 
 def SaveAllCSV(url, current_url):
     #保存在CSV中（所有链接）
-    with open('results_all.csv', 'a', newline='') as f:
+    with open(FileOutputDir + '/results_all.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([url, current_url])
 
@@ -55,9 +62,7 @@ def ToFullPath(base_url, relative_url):
 
 def getUrls(url, html_source):
     #初始化
-    urls = []
-    new_urls=[]
-    links = []
+    urls = new_urls = links = []
 
     #提取所有完整网址
     pageUrls = re.findall("https://[^>\";\']*\d", html_source) + re.findall("http://[^>\";\']*\d", html_source)
@@ -82,6 +87,7 @@ def getUrls(url, html_source):
 def web_crawl(urls, key, depth):
     #爬虫主函数
     print(Fore.WHITE + "[ * ]  DEBUG: Depth-" + str(depth))
+    global LoadedUrl
     all_Url = []
     if depth == 0:
         return;
@@ -120,6 +126,66 @@ def web_crawl(urls, key, depth):
 
     web_crawl(all_Url, key, depth - 1)
 
+def getParameter(argv):
+    def SetIt(fstr, argv, default):
+        oppCnt = 0
+        for st in argv:
+            if fstr in st:
+                st = st.replace(fstr, "")
+                return st
+                break
+            else:
+                oppCnt += 1
+        return default
+
+    
+    global SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, FileOutputDir
+    DefaultUrl = "https://www.python.org/"
+    DefaultKey = "Python"
+    DefaultDepth = "5"
+    
+    
+    if len(argv) <= 1:
+        return False
+    if "-h" in argv or "--h" in argv:
+        print('''    Usage:
+        --url:<TARGET URL>        set the target url (e.g. --url:https://www.python.org/)
+        --output:<PATH>           set the output dir path (e.g. --output:./results/)
+        --key:<STRING>            set the keyword (e.g. --key:Python)
+        --depth:<NUM>             set the depth (e.g. --depth:5)
+        -h                        get help for commands
+        -l                        display all
+        -nc                       without colored output
+        -nud                      without url deduplication
+        -s                        save all crawled links
+        
+    About:
+        This project is open source and follows the GPL-3.0 protocol.
+        The following is the code repository link for this project:
+            https://github.com/EZ118/SearSpy
+            https://gitee.com/EZ118/SearSpy''')
+        return True
+    if "-l" in argv:
+        IfShowAll_Flag = True
+    if "-nc" in argv:
+        ColorOutput = False
+    if "-nud" in argv:
+        UrlDeDuplication = False
+    if "-s" in argv:
+        SaveAll_Flag = True
+
+    
+    DefaultUrl = SetIt("--url:", argv, DefaultUrl)              #判断是否有--url参数
+    FileOutputDir = SetIt("--output:", argv, FileOutputDir)     #判断是否有--output参数
+    DefaultKey = SetIt("--key:", argv, DefaultKey)              #判断是否有--key参数
+    DefaultDepth = int(SetIt("--depth:", argv, DefaultDepth))   #判断是否有--depth参数
+
+    print("[ * ]  M S G: --url:" + DefaultUrl + " --key:" + DefaultKey + " --depth:" + str(DefaultDepth) + " --output:" + FileOutputDir)
+
+    #开始执行！
+    web_crawl([DefaultUrl], DefaultKey, DefaultDepth)
+    return True
+
 if __name__ == '__main__':
     # 输入要搜索的 url、关键词、最大深度和选项
     print('''
@@ -131,6 +197,9 @@ if __name__ == '__main__':
                                  |_|    |___/ 
     SearSpy Tool ''' + VERSION + '''
     ''')
+    
+    cli = getParameter(sys.argv)
+    if cli == True: sys.exit()
     
     url = input('Please enter the target link: ')
     key = input('Please enter the keyword: ')
