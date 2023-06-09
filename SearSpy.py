@@ -2,12 +2,14 @@
 # -*- coding: UTF-8 -*-
 
 #global VERSION,SaveAll_Flag,UrlDeDuplication,IfShowAll_Flag,ColorOutput,LoadedUrl,RequestTimeout,RequestHeaders, FileOutputDir
-VERSION = "v1.7"
+VERSION = "v1.8"
 
 SaveAll_Flag = False        #全部保存爬虫记录
 UrlDeDuplication = True     #URL去重
 IfShowAll_Flag = False      #全部输出模式
 ColorOutput = True          #彩色输出
+CurrentHostOnly = False     #仅爬取当前域名的网页
+CurrentHost = "."
 
 LoadedUrl = []              #用于存储所有已请求过的URL，实现URL去重功能
 
@@ -27,7 +29,8 @@ import requests
 import csv
 import re
 import sys
-from urllib.parse import urljoin
+#from urllib.parse import urljoin
+import urllib.parse
 from bs4 import BeautifulSoup
 
 
@@ -58,7 +61,11 @@ def SaveAllCSV(url, current_url):
 
 def ToFullPath(base_url, relative_url):
     #相对转绝对
-    return urljoin(base_url, relative_url)
+    return urllib.parse.urljoin(base_url, relative_url)
+
+def GetDomain(url):
+    #获取当前链接中的域名
+    return urllib.parse.urlparse(url).netloc
 
 def getUrls(url, html_source):
     #初始化
@@ -77,7 +84,8 @@ def getUrls(url, html_source):
         if "http" in hf or "https" in hf:
             if hf not in links and hf not in new_urls:
                 links.append(hf)
-        else:
+        elif hf[0:11] != "javascript:" and hf[0:7] != "mailto:":
+            #如果是相对链接，且不是javascript代码或email地址
             links.append(ToFullPath(url, hf))
             #print(Fore.WHITE + "[ * ]  DEBUG: UrlLog-" + ToFullPath(url, hf))
             
@@ -86,16 +94,22 @@ def getUrls(url, html_source):
 
 def web_crawl(urls, key, depth):
     #爬虫主函数
-    print(Fore.WHITE + "[ * ]  DEBUG: Depth-" + str(depth))
-    global LoadedUrl
+    global LoadedUrl, CurrentHost, CurrentHostOnly
+    urlen = len(urls)
     all_Url = []
-    if depth == 0:
+    
+    print(Fore.WHITE + "[ * ]  DEBUG: Depth-" + str(depth) + "  UrlList-" + str(urlen))
+    
+    if depth == 0 or urlen == 0:
         return;
 
     for url in urls:
         #如果URL重复
         if url in LoadedUrl:
             continue
+        elif CurrentHostOnly == True and CurrentHost not in url:
+            continue
+        
         html_source = ""
         try:
             #请求URL
@@ -139,7 +153,7 @@ def getParameter(argv):
         return default
 
     
-    global SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, FileOutputDir
+    global SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, FileOutputDir, CurrentHost, CurrentHostOnly
     DefaultUrl = "https://www.python.org/"
     DefaultKey = "Python"
     DefaultDepth = "5"
@@ -158,6 +172,7 @@ def getParameter(argv):
         -nc                       without colored output
         -nud                      without url deduplication
         -s                        save all crawled links
+        -hl                       only for the current host
         
     About:
         This project is open source and follows the GPL-3.0 protocol.
@@ -173,6 +188,8 @@ def getParameter(argv):
         UrlDeDuplication = False
     if "-s" in argv:
         SaveAll_Flag = True
+    if "-hl" in argv:
+        CurrentHostOnly = True
 
     
     DefaultUrl = SetIt("--url:", argv, DefaultUrl)              #判断是否有--url参数
@@ -183,7 +200,11 @@ def getParameter(argv):
     print("[ * ]  M S G: --url:" + DefaultUrl + " --key:" + DefaultKey + " --depth:" + str(DefaultDepth) + " --output:" + FileOutputDir)
 
     #开始执行！
+    CurrentHost = GetDomain(DefaultUrl)
     web_crawl([DefaultUrl], DefaultKey, DefaultDepth)
+
+    print(Style.RESET_ALL)
+    print("[ * ]  M S G: Done!")
     return True
 
 if __name__ == '__main__':
@@ -219,8 +240,9 @@ if __name__ == '__main__':
         IfShowAll_Flag = False
     
     print("[ * ]  M S G: Loading...")
-
+    
     # 开始执行爬虫
+    CurrentHost = GetDomain(url)
     url = [url]
     web_crawl(url, key, depth)
 

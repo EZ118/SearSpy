@@ -8,7 +8,7 @@ This project utilizes the principle of crawling to search and match websites wit
 The principle is to find all the links on the given page, visit them, match whether they match the keywords, and record them. Then, repeat the above process to obtain the links from the accessed content, and perform a search.   
    
 ## Usage
-1. SearSpy.py   
+### SearSpy.py   
 Type this command to make sure that you have already installed the needed library. If not, it would install them automaticly.   
 ```shell
 pip install -r requirements.txt
@@ -21,8 +21,18 @@ Type the Recursion Depth (author suggested to fill the number between 10 and 20,
 Type `y` or `Y` if you want to save all crawled links   
 Type `y` or `Y` to display all outputs   
    
-2. /tools/csv2json.py   
+If you want to use advanced features, try `python3 ./SearSpy.py -h` command!
+   
+### /tools/csv2json.py   
+This is a programe for turning csv format to json format.   
 Drag your csv file on its icon and release, or use `python3 cv2json.py <path>`, or run it and input the file path.   
+   
+### /tools/img_download.py   
+This program is used to download all images in CSV files that link to the website.   
+Drag your csv file on its icon and release, or use `python3 img_download.py <path>`, or run it and input the file path.   
+   
+### /tools/wizardcli.py   
+This is a SearSpy Wizard Program supports Chinese and English.   
    
 ## To Do
 1. support commond line parameter
