@@ -1,35 +1,35 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#global VERSION,SaveAll_Flag,UrlDeDuplication,IfShowAll_Flag,ColorOutput,LoadedUrl,RequestTimeout,RequestHeaders, FileOutputDir
-VERSION = "v1.8"
+#global VERSION, SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, LoadedUrl, RequestTimeout, RequestHeaders, FileOutputDir, CurrentHostOnly, CurrentHost
+VERSION = "v1.9.1"
 
 SaveAll_Flag = False        #全部保存爬虫记录
 UrlDeDuplication = True     #URL去重
 IfShowAll_Flag = False      #全部输出模式
 ColorOutput = True          #彩色输出
 CurrentHostOnly = False     #仅爬取当前域名的网页
-CurrentHost = "."
+CurrentHost = "."           #存储输入的链接的域名，用于（仅爬取当前域名的网页）
+FileOutputDir = "./"        #文件输出目录
 
 LoadedUrl = []              #用于存储所有已请求过的URL，实现URL去重功能
 
-RequestTimeout = 10         #单次请求超时设置
+RequestTimeout = 7          #单次请求超时设置
 RequestHeaders = {
     "Accept": "*/*",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3",
-    "Cookie": "token=c4d038b4bed09fdb1471ef51ec3a32cd; v=114514md5",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+    "Cookie": "PHPSESSID=uot6nkdfbq5iqn8vpmq8o2gdk1; acw_tc=2760824c16863916513117373e2ef467a663010ee8486517d903ae1bb5b63d; ASPSESSIONIDCCQAABAQ=HBMHMFCCOOOCLJJEMFFPCHMK; ",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 }                           #请求头
 
-FileOutputDir = "./"
+
 
 
 import requests
 import csv
 import re
 import sys
-#from urllib.parse import urljoin
 import urllib.parse
 from bs4 import BeautifulSoup
 
@@ -40,22 +40,20 @@ if ColorOutput == True:
     from colorama import init, Fore, Back, Style
     init()
 else:
-    class Fore:
-        GREEN = WHITE = RED = ""
-    class Style:
-        RESET_ALL = ""
+    class Fore: GREEN = WHITE = RED = ""
+    class Style: RESET_ALL = ""
 
 
 
 def SaveCSV(url, current_url):
     #保存在CSV中
-    with open(FileOutputDir + '/results_only.csv', 'a', newline='') as f:
+    with open(FileOutputDir + '/search_results.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([url, current_url])
 
 def SaveAllCSV(url, current_url):
     #保存在CSV中（所有链接）
-    with open(FileOutputDir + '/results_all.csv', 'a', newline='') as f:
+    with open(FileOutputDir + '/crawler_results.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([url, current_url])
 
@@ -87,19 +85,20 @@ def getUrls(url, html_source):
         elif hf[0:11] != "javascript:" and hf[0:7] != "mailto:":
             #如果是相对链接，且不是javascript代码或email地址
             links.append(ToFullPath(url, hf))
-            #print(Fore.WHITE + "[ * ]  DEBUG: UrlLog-" + ToFullPath(url, hf))
             
     new_urls += links
     return new_urls
 
 def web_crawl(urls, key, depth):
     #爬虫主函数
-    global LoadedUrl, CurrentHost, CurrentHostOnly
+    global LoadedUrl, CurrentHost, CurrentHostOnly, RequestTimeout
     urlen = len(urls)
     all_Url = []
-    
+
+    #输出提示信息
     print(Fore.WHITE + "[ * ]  DEBUG: Depth-" + str(depth) + "  UrlList-" + str(urlen))
-    
+
+    #如果链接列表不再有项，或者超出最大深度限制，那么结束爬虫
     if depth == 0 or urlen == 0:
         return;
 
@@ -153,7 +152,7 @@ def getParameter(argv):
         return default
 
     
-    global SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, FileOutputDir, CurrentHost, CurrentHostOnly
+    global SaveAll_Flag, UrlDeDuplication, IfShowAll_Flag, ColorOutput, FileOutputDir, CurrentHost, CurrentHostOnly, RequestTimeout
     DefaultUrl = "https://www.python.org/"
     DefaultKey = "Python"
     DefaultDepth = "5"
@@ -167,6 +166,7 @@ def getParameter(argv):
         --output:<PATH>           set the output dir path (e.g. --output:./results/)
         --key:<STRING>            set the keyword (e.g. --key:Python)
         --depth:<NUM>             set the depth (e.g. --depth:5)
+        --timeout:<NUM>           set timeout for each request (e.g. --timeout:5) (Default:7s)
         -h                        get help for commands
         -l                        display all
         -nc                       without colored output
@@ -196,13 +196,16 @@ def getParameter(argv):
     FileOutputDir = SetIt("--output:", argv, FileOutputDir)     #判断是否有--output参数
     DefaultKey = SetIt("--key:", argv, DefaultKey)              #判断是否有--key参数
     DefaultDepth = int(SetIt("--depth:", argv, DefaultDepth))   #判断是否有--depth参数
+    RequestTimeout = int(SetIt("--timeout:", argv, RequestTimeout)) #判断是否有--timeout参数
 
-    print("[ * ]  M S G: --url:" + DefaultUrl + " --key:" + DefaultKey + " --depth:" + str(DefaultDepth) + " --output:" + FileOutputDir)
+    #输出获取到的参数信息，便于定位问题或下一次爬虫
+    print("[ * ]  M S G: --url:" + DefaultUrl + " --key:" + DefaultKey + " --depth:" + str(DefaultDepth) + " --output:" + FileOutputDir + " --timeout:" + str(RequestTimeout))
 
     #开始执行！
     CurrentHost = GetDomain(DefaultUrl)
     web_crawl([DefaultUrl], DefaultKey, DefaultDepth)
 
+    #爬取完成，输出提示并结束
     print(Style.RESET_ALL)
     print("[ * ]  M S G: Done!")
     return True
@@ -227,24 +230,23 @@ if __name__ == '__main__':
     depth = int(input('Please enter the maximum recursion depth: '))
     IfSaveAllUrl = input('Do you want to save all crawled links? [y/N] ')
     IfShowAll = input('Do you want to display all outputs? [y/N] ')
-    
-    if IfSaveAllUrl.lower() == "y":
-        SaveAll_Flag = True
-    else:
-        SaveAll_Flag = False
 
-    #是否开启调试模式
-    if IfShowAll.lower() == "y":
-        IfShowAll_Flag = True
-    else:
-        IfShowAll_Flag = False
+    #判断是否保存所有爬取链接
+    if IfSaveAllUrl.lower() == "y": SaveAll_Flag = True
+    else: SaveAll_Flag = False
+
+    #判断是否开启调试模式
+    if IfShowAll.lower() == "y": IfShowAll_Flag = True
+    else: IfShowAll_Flag = False
     
     print("[ * ]  M S G: Loading...")
     
     # 开始执行爬虫
     CurrentHost = GetDomain(url)
-    url = [url]
-    web_crawl(url, key, depth)
+    web_crawl([url], key, depth)
 
+    #爬取完成，输出提示并结束
     print(Style.RESET_ALL)
     print("[ * ]  M S G: Done!")
+    print("")
+    input("Press ENTER to exit...")

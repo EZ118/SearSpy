@@ -7,6 +7,13 @@ This project utilizes the principle of crawling to search and match websites wit
 原理是在所给页面中找到所有链接，并访问他们，匹配是否符合关键词并记录，接着重复以上过程，从访问得到的内容中再得到链接，并执行搜索。   
 The principle is to find all the links on the given page, visit them, match whether they match the keywords, and record them. Then, repeat the above process to obtain the links from the accessed content, and perform a search.   
    
+## What's new?   
+**v1.9**
+1. Request timeout is set to 7 sec (default).   
+2. Request timeout can be customized through command parameters.   
+3. Simplify some code.   
+4. A BUG Fixed: Default request timeout setting was not available in function "web_crawl".   
+   
 ## Usage
 ### SearSpy.py   
 Type this command to make sure that you have already installed the needed library. If not, it would install them automaticly.   
@@ -35,7 +42,5 @@ Drag your csv file on its icon and release, or use `python3 img_download.py <pat
 This is a SearSpy Wizard Program supports Chinese and English.   
    
 ## To Do
-1. support commond line parameter
-2. csvTool to enrich the crawled data
-3. make it faster (multi-thread)
-4. make the code format more standardized
+1. make it faster (multi-thread)
+2. More customization options available
